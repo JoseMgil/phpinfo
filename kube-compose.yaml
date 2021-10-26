@@ -13,6 +13,28 @@ spec:
         app: phpinfo
         branch: santander
     spec: 
+      initContainers:
+        - 
+          args: 
+            - -c 
+            - test -f index.php || wget https://raw.githubusercontent.com/JoseMgil/phpinfo/santander/src/index.php 
+          command:
+            - /bin/sh
+          env: 
+            - 
+              name: author
+              value: Josemiguel
+            - 
+              name: JAVA_HOME
+              value: /var/lib/java
+          image: library/busybox:latest
+          name: phpinfo-init-container
+          volumeMounts: 
+            - 
+              mountPath: /src/
+              name: phpinfo-volume
+              readOnly: false
+          workingDir: /src/
       containers:
         - 
           args: 
@@ -43,15 +65,9 @@ spec:
               subPath: index.php
       volumes: 
         - 
-          configMap: 
-            defaultMode: 0400
-            items: 
-              - 
-                key: index.php
-                mode: 0400
-                path: index.php
-            name: phpinfo-cm
-            # kubectl create cm --from-file ./src/index.php phpinfo-cm
+          persistentVolumeClaim:
+            claimName: phpinfo-pvc
+            readOnly: false            
           name: phpinfo-volume
 ---
 apiVersion: v1
@@ -69,3 +85,19 @@ spec:
     app: phpinfo
     branch: santander
   type: ClusterIP
+---
+apiVersion: v1
+kind: persistentVolumeClaim
+metadata: 
+  name: phpinfo-pvc
+spec:
+  accessModes: 
+    - ReadWriteOnce
+  resources: 
+    limits: 
+      storage: 1M
+    requests: 
+      storage: 1M
+  storageClassName: gp2
+  
+  
